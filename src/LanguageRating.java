@@ -30,7 +30,7 @@ public class LanguageRating {
 
                 if(line.startsWith("\"")){
                     try{
-                        int endQuoteIndex = line.indexOf("\"", 1);
+                        int endQuoteIndex = findEndingQuote(line);
                         if(endQuoteIndex != -1) {
                             String title = line.substring(1, endQuoteIndex);
 
@@ -38,6 +38,7 @@ public class LanguageRating {
 
                             String language = remainingFields[1];
                             double rating = Double.parseDouble(remainingFields[3].trim());
+
                             languageRatings.add(new LanguageRating(title, language, rating));
 
                         } else{
@@ -64,8 +65,6 @@ public class LanguageRating {
                 }
             }
 
-
-
             Map<String, ArrayList<LanguageRating>> languageRatingsMap = new HashMap<>();
             for (LanguageRating l : languageRatings) {
                 if (!languageRatingsMap.containsKey(l.language)) {
@@ -75,29 +74,29 @@ public class LanguageRating {
             }
 
             for (Map.Entry<String, ArrayList<LanguageRating>> l : languageRatingsMap.entrySet()) {
-            String language = l.getKey();
-            ArrayList<LanguageRating> ratings = l.getValue();
-            ratings.sort((av1, av2) -> Double.compare(av2.rating, av1.rating));
+                String language = l.getKey();
+                ArrayList<LanguageRating> ratings = l.getValue();
+
+
+                ratings.sort((av1, av2) -> {
+                    if (av1.rating == null && av2.rating == null) return 0;
+                    if (av1.rating == null) return 1;
+                    if (av2.rating == null) return -1;
+                    return Double.compare(av2.rating, av1.rating);
+                });
 
                 try {
+                    FileWriter fw = new FileWriter("Outputs/Languages/task2-" + language + ".csv");
 
-                    FileWriter fw = new FileWriter("Outputs/Languages/task2-"+language.replaceAll("[^a-zA-Z0-9]", "_")+".csv");
-
-                    int counter = Math.min(50,ratings.size());
+                    int counter = Math.min(50, ratings.size());
                     for (int i = 0; i < counter; i++) {
                         LanguageRating rating = ratings.get(i);
-
-                        String formattedTitle = rating.title.contains(",") ? "\"" + rating.title + "\"" : rating.title;
-                        fw.write(String.format("%s,%s,%.2f\n",
-                                formattedTitle,
-                                rating.language,
-                                rating.rating));
+                        fw.write(rating.title + "," + rating.rating + "\n");
                     }
-
+                    fw.close();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-
             }
 
         } catch (Exception e) {
@@ -105,12 +104,21 @@ public class LanguageRating {
         }
     }
 
+    private int findEndingQuote(String line) {
+        for (int i = 1; i < line.length(); i++) {
+            if (line.charAt(i) == '"') {
+                if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                    i++;
+                    continue;
+                }
+                return i;
+            }
+        }
+        return -1;
+    }
+
     @Override
     public String toString() {
-        return "LanguageRating{" +
-                "title='" + title + '\'' +
-                ", language='" + language + '\'' +
-                ", rating=" + rating +
-                '}';
+        return "Title = " + title + ", rating = " + rating;
     }
 }
